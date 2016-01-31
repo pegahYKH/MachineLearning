@@ -1,0 +1,82 @@
+---
+title: "Assignment"
+author: "Pegah Yazdkhasti"
+date: "January 31, 2016"
+output: html_document
+---
+
+The first step is to load the csv file to get training and testing data with the 'calasse' parameter as the outcome:
+
+
+```{r qplot, fig.width=4, fig.height=3, message=FALSE}
+#quick summary
+library(caret)
+library(ggplot2)
+mydata <- read.csv("pml-training.csv") 
+
+inTrain <- createDataPartition(y=mydata$classe, p=0.75, list=FALSE)
+
+training <- mydata[inTrain,]
+testing <- mydata[-inTrain,]
+```
+
+Now using near zero variables pre-processing tools, the irrelavant variables can be determined:
+```{r}
+nsv <- nearZeroVar(training , saveMetrics=TRUE)
+nsv
+```
+
+The variables whose 'nzv' parameter is TRUE have no impact on the outcome and thus they can be removed from the data.
+
+The username and time (basically the first 7 columns) also have no impact on the outcome; therefore, in addition to the 'nzv' variables, these columns can also be omitted. 
+
+The resulting data set is stored in a new 'csv' file called 'reduced.csv' and from now on, this file will be used as the primary input data. The training and testing sets will be created from this data file:
+
+```{r}
+mydata <- read.csv("reduced.csv") 
+inTrain <- createDataPartition(y=mydata$classe, p=0.75, list=FALSE)
+
+training <- mydata[inTrain,]
+testing <- mydata[-inTrain,]
+```
+
+Relationship between the 'classe' outcome and different variables can be observed through featurePlot function:
+
+```{r}
+featurePlot(x=training[,c("classe","roll_belt","pitch_belt","yaw_belt")],y=training$classe, plot="pairs")
+```
+
+This example shows how the 'classe' may depend on 'roll belt','pitch belt' or 'yaw belt'.
+
+Now, a model can be created with all the reduced paramters using the 'train' function with 'random forest' method.
+
+```{r}
+modFit <- train(classe ~ .,method = "rf",data = training)
+modFit
+```
+
+Using this model to predict the outcome on the testing set will result in:
+
+```{r}
+prediction <- predict(modFit , newdata=testing)
+
+prediction
+```
+
+where the confusion matrix can be obtained with:
+```{r}
+confusionMatrix(prediction, testing$classe)
+```
+
+Since the result is good, we can run this model on the final test data. To do this, first we should load the test data, then apply the predict function on the data and print the result:
+```{r}
+runData  <- read.csv("pml-testing.csv")
+result <- predict(modFit , newdata=runData  )
+
+result
+```
+
+
+
+
+
